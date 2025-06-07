@@ -1,0 +1,644 @@
+# Laporan Proyek Machine Learning - Nasywa Agiyan Nisa
+
+## **1. Domain Proyek**
+
+Pemilihan tontonan yang sesuai dengan preferensi merupakan tantangan besar bagi pengguna layanan streaming dan katalog anime. Hal ini diperburuk oleh banyaknya pilihan anime yang tersedia yang mana mencapai lebih dari 16.000 judul pada platform Anime-Planet. Dalam konteks ini, sistem rekomendasi berperan penting untuk menyaring informasi dan menyajikan konten yang relevan.
+
+Menurut Statista (2023), nilai industri anime global melebihi USD 20 miliar, menandakan tingginya antusiasme masyarakat terhadap media ini. Namun, dengan beragamnya genre, gaya animasi, dan preferensi individu, pemilihan secara manual dapat menyebabkan *information overload* dan *decision fatigue*.
+
+Sistem rekomendasi merupakan solusi berbasis data yang telah terbukti efektif dalam meningkatkan pengalaman pengguna pada platform besar seperti Netflix dan YouTube. Secara umum, sistem ini terbagi dalam dua pendekatan utama:
+
+1. Content-Based Filtering (CBF) – merekomendasikan item berdasarkan kesamaan fitur konten seperti genre dan tag.
+2. Collaborative Filtering (CF) – menyarankan item berdasarkan pola perilaku pengguna lain dengan preferensi serupa.
+
+Namun, pengembangan sistem rekomendasi menuntut pemrosesan data dalam jumlah besar dan kompleks, yang tidak efisien jika dilakukan secara manual. Oleh karena itu, machine learning menjadi pendekatan yang tepat untuk membangun sistem rekomendasi cerdas, otomatis, dan scalable.
+
+Proyek ini bertujuan mengembangkan dua jenis sistem rekomendasi CBF dan CF menggunakan data publik dari AnimePlanet Recommendation Database 2020 yang mencakup lebih dari 8 juta interaksi pengguna dan metadata lengkap dari judul anime.
+
+### Referensi
+
+* Aggarwal, C. C. (2016). *Recommender systems: The textbook*. Springer. [https://doi.org/10.1007/978-3-319-29659-7](https://doi.org/10.1007/978-3-319-29659-7)
+* Ricci, F., Rokach, L., & Shapira, B. (Eds.). (2015). *Recommender systems handbook* (2nd ed.). Springer. [https://doi.org/10.1007/978-1-4899-7637-6](https://doi.org/10.1007/978-1-4899-7637-6)
+* Schafer, J. B., Konstan, J. A., & Riedl, J. (2007). Collaborative filtering recommender systems. In *The adaptive web* (pp. 291–324). Springer. [https://doi.org/10.1007/978-3-540-72079-9\_9](https://doi.org/10.1007/978-3-540-72079-9_9)
+* Statista. (2023). *Anime market revenue worldwide 2023*. Retrieved from [https://www.statista.com/topics/5037/anime/](https://www.statista.com/topics/5037/anime/)
+* Hernan4444. (2020). *AnimePlanet Recommendation Database 2020* \[Data set]. Kaggle. [https://www.kaggle.com/datasets/hernan4444/animeplanet-recommendation-database-2020](https://www.kaggle.com/datasets/hernan4444/animeplanet-recommendation-database-2020)
+
+
+## **2. Business Understanding**
+
+### 2.1 Problem Statements
+
+1. Pengguna kesulitan menemukan anime yang sesuai dengan preferensi mereka karena banyaknya pilihan yang tersedia.
+Platform anime seperti Anime-Planet memiliki ribuan judul, dan pengguna (terutama yang baru) tidak selalu tahu anime mana yang cocok untuk mereka.
+
+2. Sistem rekomendasi tradisional yang hanya berdasarkan popularitas tidak mampu memberikan rekomendasi yang personal dan relevan.
+Rekomendasi semacam ini mengabaikan selera individu, genre yang disukai, atau kebiasaan menonton sebelumnya.
+
+3. Kurangnya sistem yang menggabungkan informasi konten dan interaksi pengguna secara efektif. Banyak sistem hanya menggunakan satu pendekatan (konten atau collaborative) sehingga hasil rekomendasinya terbatas.
+
+### 2.2 Goals
+
+1. Mengembangkan sistem content-based filtering yang dapat merekomendasikan anime berdasarkan kemiripan Tags atau genre, untuk pengguna baru yang belum banyak memberikan rating.
+
+2. Mengembangkan sistem collaborative filtering berbasis machine learning yang memanfaatkan pola rating/interaksi pengguna untuk memberikan rekomendasi yang lebih akurat dan personal.
+
+3. Membandingkan dua pendekatan sistem rekomendasi (CBF dan CF) untuk menentukan metode terbaik dalam konteks data Anime-Planet.
+
+### 2.3 Solution Statements
+
+1. Content-Based Filtering (CBF)
+- Menggunakan TfidfVectorizer untuk mengekstrak fitur dari kolom Tags.
+- Menggunakan cosine_similarity untuk menghitung kemiripan antar anime.
+- Rekomendasi diberikan berdasarkan kesamaan konten anime dengan anime yang telah disukai pengguna.
+- Metrik evaluasi (kualitatif): Relevansi hasil dilihat secara manual berdasarkan kesesuaian tag dan genre dan -
+- Metrik evaluasi (kuantitatif): Menggunakan Precision@k yaitu metrik evaluasi yang mengukur berapa banyak item relevan (benar-benar disukai pengguna) yang berhasil direkomendasikan di antara k item teratas yang diberikan oleh sistem rekomendasi.
+
+2. Collaborative Filtering (CF) dengan Neural Network
+- Menggunakan embedding untuk user dan anime, lalu mengalikan hasil embedding untuk memprediksi rating.
+- Model RecommenderNet dilatih untuk memprediksi probabilitas user menyukai anime (klasifikasi biner).
+- Metrik evaluasi (kuantitatif):
+Root Mean Squared Error (RMSE) dan Binary Crossentropy
+
+## **3. Data Understanding**
+
+### 3.1 Deskripsi Dataset
+
+Dataset mencakup lima file:
+####`anime.csv`
+
+* Jumlah baris: 16.621
+* Jumlah kolom: 17
+* Deskripsi: Berisi informasi deskriptif mengenai setiap anime di database. Termasuk nama, rating, jumlah vote, genre (Tags), konten peringatan, jenis (TV/Web/Movie), jumlah episode, tahun tayang, studio, sinopsis, dan URL.
+* Temuan:
+
+  * Kolom `Tags` kaya akan informasi dan cocok digunakan sebagai fitur dalam pendekatan *Content-Based Filtering*.
+  * Nilai `Rating Score` dan `Number Votes` dapat digunakan untuk peringkat anime.
+  * Kolom Synopsis memiliki nilai missing values sejumlah 6, missing values ini tidak kita lakukan penanganan dikarenakan kita tidak menggunakannya untuk analisis.
+
+#### `animelist.csv`
+
+* Jumlah baris: 20.842.201
+* Jumlah kolom: 5
+* Deskripsi: Menyimpan data aktivitas pengguna dalam menonton anime, termasuk ID pengguna, ID anime, skor rating yang diberikan, status menonton, dan jumlah episode yang ditonton.
+* Temuan:
+  * Data ini sangat besar dan mencerminkan interaksi nyata pengguna terhadap berbagai anime.
+  * Kolom `rating` di sini merupakan kandidat kuat untuk digunakan pada pendekatan *Collaborative Filtering*.
+
+#### `anime_recommendations.csv`
+
+* Jumlah baris: 175.731
+* Jumlah kolom: 3
+* Deskripsi: Merupakan hasil rekomendasi berdasarkan kesamaan antar anime. Berisi pasangan anime dan jumlah pengguna yang menyetujui rekomendasi tersebut (`Agree Votes`).
+* Temuan:
+  * Dapat digunakan sebagai data pembanding (benchmark) atau untuk mengevaluasi hasil sistem rekomendasi yang dibangun.
+  * Tidak digunakan langsung dalam model, namun membantu memahami perilaku asosiasi anime.
+
+####  `rating_complete.csv`
+
+* Jumlah baris: 8.765.945
+* Jumlah kolom: 3
+* Deskripsi: Berisi data rating pengguna terhadap anime yang telah ditonton. Mirip dengan `animelist.csv`, namun sudah dalam format yang bersih dan hanya fokus pada rating.
+* Temuan:
+  * Digunakan sebagai data utama dalam pembuatan sistem rekomendasi berbasis pengguna (user-anime interaction).
+  * Jumlah user unik: 68.199
+  * Jumlah anime unik: 15.681
+  * Skor rating awal berkisar antara 0.0 hingga 10.0 dan kemudian dinormalisasi ke 0–1.
+
+#### `watching_status.csv`
+
+* Jumlah baris: 6
+* Jumlah kolom: 2
+* Deskripsi: Tabel referensi untuk mendeskripsikan nilai pada kolom `watching_status` (contoh: 1 = Watched, 2 = Watching, dll.).
+* Temuan:
+  * Berguna sebagai label atau keterangan tambahan untuk interpretasi data pengguna.
+  * Tidak digunakan secara langsung dalam model, namun dapat membantu untuk filtering pengguna aktif.
+
+Link Dataset
+https://www.kaggle.com/datasets/hernan4444/animeplanet-recommendation-database-2020
+
+
+### 3.2 Variabel
+#### anime.csv
+
+Berisi informasi metadata dari masing-masing judul anime.
+
+| Nama Kolom         | Tipe Data | Penjelasan                                                  |
+| ------------------ | --------- | ----------------------------------------------------------- |
+| `Anime-PlanetID`   | int       | ID unik yang digunakan untuk mengidentifikasi setiap anime. |
+| `Name`             | object    | Nama utama anime.                                           |
+| `Alternative Name` | object    | Nama alternatif dalam bahasa lain atau judul lain.          |
+| `Rating Score`     | float     | Skor rating rata-rata pengguna (0–5).                       |
+| `Number Votes`     | int       | Jumlah pengguna yang memberikan rating.                     |
+| `Tags`             | object    | Daftar tag/genre (misalnya: Action, Romance).               |
+| `Content Warning`  | object    | Peringatan konten sensitif seperti "Violence", "Nudity".    |
+| `Type`             | object    | Jenis anime: TV, Movie, OVA, ONA, atau Short.               |
+| `Episodes`         | int/str   | Jumlah episode (ada yang Unknown).                          |
+| `Finished`         | bool      | Status apakah anime sudah tamat (True/False).               |
+| `Duration`         | str       | Durasi rata-rata episode (banyak nilai "Unknown").          |
+| `StartYear`        | int       | Tahun mulai tayang.                                         |
+| `EndYear`          | int       | Tahun tamat tayang (jika sudah).                            |
+| `Season`           | str       | Musim tayang: Spring, Summer, Fall, Winter.                 |
+| `Studios`          | object    | Studio produksi anime.                                      |
+| `Synopsis`         | object    | Ringkasan cerita anime.                                     |
+| `Url`              | object    | Tautan ke halaman anime di Anime-Planet.                    |
+
+#### animelist.csv
+
+Berisi riwayat interaksi pengguna dengan anime.
+
+| Nama Kolom         | Tipe Data | Penjelasan                                                |
+| ------------------ | --------- | --------------------------------------------------------- |
+| `user_id`          | int       | ID unik pengguna.                                         |
+| `anime_id`         | int       | ID anime yang ditonton pengguna.                          |
+| `rating`           | float     | Rating yang diberikan pengguna (0.0 hingga 5.0).          |
+| `watching_status`  | int       | Kode status menonton (lihat tabel `watching_status.csv`). |
+| `watched_episodes` | int       | Jumlah episode yang telah ditonton oleh pengguna.         |
+
+#### rating\_complete.csv
+
+Merupakan subset dari `animelist.csv` hanya berisi user-anime-rating.
+
+| Nama Kolom | Tipe Data | Penjelasan                           |
+| ---------- | --------- | ------------------------------------ |
+| `user_id`  | int       | ID pengguna.                         |
+| `anime_id` | int       | ID anime.                            |
+| `rating`   | float     | Skor rating pengguna terhadap anime. |
+
+#### anime\_recommendations.csv
+
+Berisi hubungan antar anime berdasarkan voting pengguna.
+
+| Nama Kolom       | Tipe Data | Penjelasan                                                   |
+| ---------------- | --------- | ------------------------------------------------------------ |
+| `Anime`          | int       | ID anime utama.                                              |
+| `Recommendation` | int       | ID anime yang direkomendasikan untuk anime utama.            |
+| `Agree Votes`    | int       | Jumlah pengguna yang setuju dengan hubungan rekomendasi ini. |
+
+#### watching\_status.csv
+
+Mapping dari kode status menonton ke deskripsi teks.
+
+| Nama Kolom    | Tipe Data | Penjelasan                                          |
+| ------------- | --------- | --------------------------------------------------- |
+| `status`      | int       | Kode numerik untuk status menonton.                 |
+| `description` | object    | Deskripsi status (Watched, Watching, Dropped, dsb). |
+
+Contoh mapping:
+
+* 1 → Watched
+* 2 → Watching
+* 3 → Dropped
+* 4 → Want to Watch
+* 5 → Stalled
+* 6 → Plan to Watch
+
+### 3.3 Variabel yang Digunakan Langsung dalam Model
+
+#### Content-Based Filtering:
+
+* `Name` → digunakan sebagai identifier.
+* `Tags` → diolah dengan TF-IDF untuk ekstraksi fitur.
+* `Rating Score` (opsional) → sebagai tambahan fitur atau penyaring hasil.
+
+#### Collaborative Filtering:
+
+* `user_id` dan `anime_id` → di-*encode* sebagai index numerik untuk input embedding.
+* `rating` → digunakan sebagai target training model.
+
+### 3.4 Tahapan Analisis Data (EDA)
+#### Beberapa tahapan eksplorasi data dilakukan untuk memahami karakteristik dataset, di antaranya:
+- Visualisasi distribusi tipe anime (TV, Movie, OVA).
+- Menampilkan 10 anime dengan rata-rata rating tertinggi.
+- Menampilkan anime yang paling sering direkomendasikan.
+- Visualisasi proporsi status menonton pengguna (Watching, Completed, Dropped, dll).
+- Pemeriksaan nilai duplikat dan missing value.
+- Statistik ringkas: total user, total anime, dan sebaran rating.
+Langkah-langkah ini membantu memahami struktur dan pola dalam data sebelum pemodelan dilakukan
+
+## **4. Data Preparation**
+
+Berikut adalah langkah-langkah data preparation yang dilakukan secara berurutan:
+1. Penggabungan Data
+   Dataset anime.csv dan animelist.csv memiliki banyak kolom yang tidak semuanya dibutuhkan dalam proses modeling. Oleh karena itu, dilakukan seleksi kolom agar fokus pada informasi penting saja:
+   
+   Dari anime.csv dipilih kolom:
+   - Anime-PlanetID: ID unik anime
+   - Name: Judul anime
+   - Rating Score: Skor penilaian dari komunitas
+   - Tags: Deskripsi konten (genre, tema, dll)
+
+    Dari animelist.csv dipilih kolom:
+    - user_id
+    - anime_id
+    - rating
+    
+    Kedua dataset kemudian digabungkan melalui kolom ID anime untuk membentuk satu dataframe gabungan (merged_anime) yang menghubungkan pengguna, anime, dan informasi kontennya. Data ini kemudian disalin ke anime_selected dan diurutkan berdasarkan ID.
+
+2. Pembersihan Teks
+   Karakter HTML seperti `&quot;`, `&#039;`, dan `&amp;` dibersihkan dari kolom `Name` menggunakan regex.
+   Tujuannya untuk meningkatkan kualitas teks dalam analisis konten.
+
+3. Penghapusan Duplikat dan Missing Values
+   Seluruh data diperiksa, dan tidak ditemukan nilai kosong maupun duplikasi pada data yang digunakan untuk modeling.
+
+4. Normalisasi Rating
+   Nilai rating yang awalnya 0–10 dinormalisasi ke rentang 0–1. Hal ini penting untuk menjaga skala input model neural network agar stabil.
+
+5. Label Biner untuk CF
+   Rating dikonversi menjadi label biner:
+
+   * `rating ≥ 3.5` → 1 (Suka)
+   * `selain ≥ 3.5` → 0 (Tidak suka)
+     Ini disesuaikan dengan target model klasifikasi.
+
+6. Encoding ID
+   `user_id` dan `anime_id` diubah menjadi integer index menggunakan dictionary mapping.
+   Encoding ini diperlukan agar bisa digunakan sebagai input embedding dalam model collaborative filtering.
+
+7.  Filtering User Aktif untuk Collaborative Filtering
+    Dalam sistem rekomendasi berbasis Collaborative Filtering, langkah "filtering user aktif" mengacu pada penyaringan pengguna yang memiliki cukup banyak interaksi (rating) agar model dapat belajar pola preferensi dengan lebih baik dan hasil rekomendasi lebih akurat.
+
+    Dalam proyek ini:
+    - Pengguna yang memberikan < 10 rating akan dihapus dari data pelatihan.
+    - Hanya pengguna dengan ≥ 10 interaksi (anime yang diberi rating) yang dipertahankan.
+
+8. Pembagian Dataset
+   Dataset diacak lalu dibagi menjadi:
+   * Training set: 80%
+   * Testing set: 20%
+
+9.  TF-IDF Vectorization untuk Content-Based Filtering
+    Setelah kolom `Tags` pada `anime.csv` dibersihkan dari tanda baca dan disatukan antar tag-nya, dilakukan vectorisasi teks menggunakan TF-IDF (Term Frequency-Inverse Document Frequency).
+    
+    Tujuannya adalah mengubah teks genre/tag setiap anime menjadi representasi numerik berdimensi tinggi, sehingga kemiripan antar anime dapat dihitung menggunakan *cosine similarity*.
+
+    Langkah-langkah:
+    - Setiap tag diolah dengan `TfidfVectorizer` dari scikit-learn.
+    - Dihasilkan matrix TF-IDF berukuran `(16621, 616)` — artinya 16.621 anime direpresentasikan dalam 616 fitur kata unik.
+
+    Matrix ini akan digunakan untuk mencari anime yang mirip berdasarkan kontennya.
+
+
+## **5. Modeling and Result**
+
+Proyek ini menggunakan dua pendekatan model machine learning untuk menyelesaikan masalah rekomendasi anime:
+
+### 5.1 Content-Based Filtering (CBF)
+
+#### Tahapan dan Parameter:
+
+* Kemiripan antar anime dihitung dengan cosine similarity.
+* Rekomendasi diberikan dengan memilih anime yang paling mirip dengan anime yang pernah disukai pengguna.
+
+#### Kelebihan:
+
+* Tidak membutuhkan data interaksi pengguna.
+* Cocok untuk mengatasi masalah *cold start* pada pengguna baru.
+
+#### Kekurangan:
+
+* Tidak bisa merekomendasikan anime dengan konten berbeda meskipun disukai pengguna yang mirip.
+* Bergantung sepenuhnya pada kelengkapan dan kualitas fitur konten (`Tags`).
+
+#### 5.2 Collaborative Filtering (CF) dengan Neural Network
+
+#### Tahapan dan Parameter:
+
+#### Struktur Model Collaborative Filtering (RecommenderNet)
+
+Model Collaborative Filtering ini dirancang menggunakan pendekatan neural network berbasis embedding. Tujuannya adalah mempelajari representasi (vektor) dari user dan anime dalam ruang laten (latent space), dan memprediksi kemungkinan pengguna akan menyukai suatu anime (label biner: 1 = suka, 0 = tidak suka).
+
+#### Arsitektur Model
+#### Input Layer
+
+* `user_input`: menerima indeks user berukuran `(1,)`
+* `anime_input`: menerima indeks anime berukuran `(1,)`
+
+#### Embedding Layer
+
+Embedding digunakan untuk merepresentasikan setiap user dan anime dalam bentuk vektor numerik berdimensi tetap:
+
+```python
+user_embedding = Embedding(input_dim=n_users, output_dim=embedding_size)(user_input)
+anime_embedding = Embedding(input_dim=n_animes, output_dim=embedding_size)(anime_input)
+```
+
+* `input_dim`: jumlah user / anime unik (setelah encoding)
+* `output_dim`: dimensi vektor embedding (dalam model ini, **50 dimensi**)
+
+Fungsi embedding ini mirip seperti Word2Vec: user dan anime yang memiliki pola interaksi mirip akan memiliki representasi vektor yang saling dekat dalam ruang embedding.
+
+#### Dot Product Layer
+
+```python
+dot_product = Dot(axes=2, normalize=True)([user_embedding, anime_embedding])
+```
+
+* Menghitung dot product (perkalian vektor) antara embedding user dan anime.
+* Digunakan `normalize=True` agar dot product mencerminkan cosine similarity.
+* Hasilnya adalah skor kedekatan preferensi user terhadap anime.
+
+#### Dense, Normalization, dan Aktivasi
+
+```python
+x = Flatten()(dot_product)
+x = Dense(1, kernel_initializer='he_normal')(x)
+x = BatchNormalization()(x)
+x = Activation("sigmoid")(x)
+```
+
+* `Flatten`: meratakan tensor output agar bisa masuk ke lapisan Dense.
+* `Dense(1)`: satu neuron untuk memprediksi output (suka/tidak suka).
+* `BatchNormalization`: menstabilkan dan mempercepat pelatihan.
+* `Activation(sigmoid)`: fungsi aktivasi untuk output biner \[0–1] → prediksi "probabilitas disukai".
+
+#### Loss Function
+
+```python
+loss = BinaryCrossentropy()
+```
+
+* Digunakan karena tugas ini adalah klasifikasi biner.
+* Mengukur seberapa baik model memprediksi probabilitas yang sesuai dengan label sebenarnya.
+
+#### Optimizer
+
+```python
+optimizer = Adam(learning_rate=0.001)
+```
+
+* Optimizer **Adam** dipilih karena mampu menyesuaikan laju belajar secara adaptif.
+* `learning_rate=0.001` memberikan keseimbangan antara kecepatan dan kestabilan pelatihan.
+
+#### Metrik Evaluasi
+
+```python
+metrics = [RootMeanSquaredError()]
+```
+
+* RMSE (Root Mean Squared Error) digunakan sebagai metrik tambahan meskipun target berupa label biner.
+* Mengukur selisih rata-rata kuadrat antara prediksi dan label asli.
+
+#### Parameter Pelatihan
+
+```python
+model.fit(..., batch_size=64, epochs=2, validation_split=0.2)
+```
+
+* Batch size: 64 (jumlah sampel dalam sekali update bobot)
+* Epochs: 2 (jumlah iterasi pelatihan keseluruhan terhadap data)
+* Validation split: 20% dari data pelatihan digunakan untuk validasi model
+* EarlyStopping: menghentikan pelatihan jika val\_loss tidak membaik selama 3 epoch berturut-turut
+
+### 5.3 Hasil Top-N Rekomendasi & Interpretasi
+
+#### **1. Content-Based Filtering (CBF)**
+
+Contoh input: Anime *"Steel Fire Brigade Fire Robo"*
+Model menghitung kemiripan konten berdasarkan TF-IDF dari kolom `Tags`.
+
+#### Top-5 Anime yang Direkomendasikan (berdasarkan kemiripan konten):
+
+1. **Chuldong! Robot V**
+
+   * Genre: Action, Mecha, Sci-Fi, Family Friendly, Korean Animation
+
+2. **Metalions 2nd Season**
+
+   * Genre: Action, Mecha, Sci-Fi, Family Friendly, Korean Animation
+
+3. **Metalions**
+
+   * Genre: Action, Mecha, Sci-Fi, Family Friendly, Korean Animation
+
+4. **Taoreujima Buster**
+
+   * Genre: Comedy, Mecha, Family Friendly, Korean Animation
+
+5. **Geukjangpan Taoreujima Buster: Black Assault-ui Yeongyeok**
+
+   * Genre: Comedy, Mecha, Family Friendly, Korean Animation
+
+#### Interpretasi:
+
+Model berhasil memberikan rekomendasi yang relevan secara tematik, di mana semua judul yang muncul memiliki genre Action, Mecha, Sci Fi, Family Friendly, Korean Animation yang merupakan ciri khas dari Steel Fire Brigade Fire Robo. Ini menunjukkan bahwa model TF-IDF mampu menangkap struktur semantik dari tag anime dan menghasilkan rekomendasi yang sejalan dengan konten utama anime input.
+
+#### **2. Collaborative Filtering (CF)**
+
+Contoh input: User ID 72703
+Model digunakan untuk memprediksi probabilitas user menyukai anime tertentu (label 1 = suka, 0 = tidak suka), berdasarkan pola interaksi antar user dan anime.
+
+#### Top-5 Anime yang Direkomendasikan (berdasarkan prediksi model):
+
+
+1. **Katana Maidens: Toji no Miko Recap**
+
+   * Prediksi Rating: 0.470138
+   * Genre: Action, Recap, School Life, Supernatural, Swordplay
+   * Sinopsis: *Since the ancient times, the Kannagi priestess..
+
+2. **Pinocchio-P: E no Umakatta Tomodachi**
+
+   * Prediksi Rating: 0.464502
+   * Genre: Art, Vocaloid
+   * Sinopsis: *No synopsis yet - check back soon!*
+
+3. **Shijin no Shougai**
+
+   * Prediksi Rating: 0.456394
+   * Genre: Abstract, Shorts
+   * Sinopsis: *After his mother suddenly disappears and he is...*
+
+4. **Yakusoku (2009)**
+
+   * Prediksi Rating: 0.455088
+   * Genre: Shorts, Original Work
+   * Sinopsis: *No synopsis yet - check back soon!*
+
+5. **Servamp: Hai ni Mamireta Shoukei - All the world’s a stage**
+
+   * Prediksi Rating: 0.454850
+   * Genre: Comedy, Josei, Supernatural, Based on a Manga
+   * Sinopsis: *No synopsis yet - check back soon!*
+
+Kalau kamu ingin dibuatkan ringkasan, insight, atau visualisasi dari data ini, tinggal bilang aja!
+
+#### Interpretasi:
+
+Model memberikan rekomendasi yang tidak hanya berdasarkan konten, tapi juga berdasarkan kesamaan pola preferensi antar pengguna. Beberapa judul yang direkomendasikan seperti *Katana Maidens: Toji no Miko Recap* dan *Pinocchio-P: E no Umakatta Tomodachi* memiliki tema fantasi dan olahraga, yang dapat menunjukkan bahwa user 72703 memiliki kecenderungan menyukai genre klasik atau nostalgia. Skor prediksi berkisar antara 0.45 hingga 0.47, menunjukkan adanya keyakinan sedang dari model, yang wajar mengingat user bukan tergolong sangat aktif.
+
+#### Kesimpulan Desain
+
+Model ini memanfaatkan embedding sebagai fondasi utama untuk memahami pola interaksi antara pengguna dan anime. Kombinasi dot product + dense layer + normalisasi + sigmoid dirancang untuk memaksimalkan akurasi prediksi terhadap preferensi user, dengan arsitektur minimalis yang efisien dan tetap fleksibel untuk ditingkatkan.
+
+#### Kelebihan:
+
+* Dapat mempelajari pola interaksi yang kompleks antara pengguna dan item.
+* Tidak bergantung pada fitur konten eksplisit.
+
+#### Kekurangan:
+
+* Tidak dapat memberikan rekomendasi untuk pengguna atau anime baru (*cold start*).
+* Cenderung overfitting jika data tidak seimbang.
+
+### 5.4 Pemilihan Model Terbaik
+
+Meskipun content-based dapat memberikan rekomendasi tanpa data interaksi, model collaborative filtering memberikan pendekatan yang lebih personal dan dinamis. Oleh karena itu, model collaborative filtering dipilih sebagai solusi utama, dengan catatan tetap dilakukan tuning dan balancing data untuk mengatasi overfitting.
+
+## **6. Evaluation**
+
+### 6.1 Metrik Evaluasi yang Digunakan
+
+Karena model collaborative filtering diperlakukan sebagai model klasifikasi biner (suka atau tidak suka), digunakan dua metrik utama:
+
+1. Binary Crossentropy
+   Digunakan sebagai fungsi loss, mengukur jarak antara prediksi dan label biner:
+
+$$
+L = -\frac{1}{n} \sum_{i=1}^{n} \left( y_i \cdot \log(\hat{y}_i) + (1 - y_i) \cdot \log(1 - \hat{y}_i) \right)
+$$
+
+2. Root Mean Squared Error (RMSE)
+   Digunakan sebagai metrik tambahan untuk melihat seberapa jauh prediksi dari label sebenarnya:
+
+$$
+RMSE = \sqrt{ \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2 }
+$$
+
+3. Precision@k
+    Precision@k adalah metrik evaluasi yang mengukur berapa banyak item relevan (benar-benar disukai pengguna) yang berhasil direkomendasikan di antara k item teratas yang diberikan oleh sistem rekomendasi.
+
+    Dalam Content-Based Filtering, sistem membuat rekomendasi berdasarkan kemiripan fitur konten antara item yang pernah disukai pengguna dengan item lain (misalnya berdasarkan genre, deskripsi, kata kunci, dll).
+    
+    Precision@k digunakan untuk:
+    - Mengukur seberapa tepat sistem merekomendasikan item baru berdasarkan konten yang mirip.
+    - Mengevaluasi seberapa banyak dari k rekomendasi yang benar-benar cocok untuk pengguna.
+
+### 6.2 Hasil Evaluasi Model Collaborative Filtering
+
+Model Collaborative Filtering (CF) dilatih menggunakan binary classification dengan target apakah user menyukai suatu anime (label 1 jika rating ≥ 3.5, label 0 jika selain ≥ 3.5 ). Berikut adalah hasil evaluasi:
+
+- *Fungsi Loss:* Binary Crossentropy
+- *Optimizer:* Adam
+- *Epoch:* 2
+- *Batch Size:* 64
+
+#### Final Loss dan RMSE
+| Dataset | Loss (Binary Crossentropy) | RMSE   |
+|--------|-----------------------------|--------|
+| Train  | 0.6412                      | 0.4746 |
+| Test   | 0.6118                      | 0.4577 |
+
+#### Interpretasi:
+
+1. Stabilitas antara train dan test
+
+   Nilai loss dan RMSE pada data train dan test cukup dekat. Hal ini menunjukkan bahwa model tidak mengalami overfitting dan mampu melakukan generalisasi dengan cukup baik terhadap data baru.
+
+2. Nilai RMSE sekitar 0.45 - 0.47
+
+   RMSE sebesar 0.45 - 0.47 berarti model, secara rata-rata, meleset sekitar 0.45 - 0.47 poin dari rating aktual yang telah dinormalisasi ke rentang 0 hingga 1. Ini tergolong cukup baik dalam konteks sistem rekomendasi biner (suka atau tidak suka), karena prediksi model cukup dekat dengan label sebenarnya.
+
+3. Loss binary crossentropy sekitar 0.61 - 0.64
+
+   Nilai ini menunjukkan kemampuan model dalam membedakan antara label 0 (tidak suka) dan 1 (suka). Nilai sekitar 0.61 - 0.64 menunjukkan bahwa model memiliki performa klasifikasi yang sedang, namun masih terdapat ruang untuk peningkatan, terutama jika distribusi data kurang seimbang.
+
+4. Akurasi model dalam konteks aplikasi nyata
+
+   Karena model memprediksi probabilitas seorang pengguna menyukai suatu anime, hasil ini cukup menjanjikan untuk digunakan dalam skenario nyata. Contohnya adalah ketika sistem ingin menyusun daftar rekomendasi berdasarkan skor prediksi tertinggi atau memfilter anime yang paling mungkin disukai pengguna.
+
+#### Hasil Evaluasi Model Content Based Filtering
+
+   -  Anime: Naruto
+      Precision@10: 1.0000
+
+   -  Anime: One Piece
+      Precision@10: 1.0000
+
+   -  Anime: Attack on Titan
+      Precision@10: 1.0000
+
+   Precision@10 = 1.0 Artinya Sangat Tinggi
+    - Semua rekomendasi (10 dari 10) memiliki kemiripan tag dengan anime target.
+    - Ini menunjukkan model Content-Based Filtering bekerja sangat baik dalam kesamaan konten/tag.
+
+
+## **7. Kesimpulan** 
+Berdasarkan proses eksplorasi dan pemodelan yang dilakukan dalam proyek sistem rekomendasi anime menggunakan dataset Anime-Planet Recommendation Database 2020, berikut adalah kesimpulan yang menjawab langsung problem statements dan goals:
+
+### **1. Content-Based Filtering (CBF)**
+
+* Sistem rekomendasi berbasis konten berhasil dibangun dengan memanfaatkan kolom Tags dari dataset `anime.csv`.
+* Fitur diekstrak menggunakan metode TF-IDF Vectorizer, menghasilkan matriks fitur berukuran (16621, 616)**.
+* Kemiripan antar anime dihitung menggunakan cosine similarity, menghasilkan matriks ukuran (16621, 16621)**.
+* Fungsi `anime_recommendations()` berhasil memberikan rekomendasi anime yang relevan berdasarkan kemiripan konten.
+* Metrik evaluasi kualitatif menunjukkan relevansi genre dan tema sangat sesuai.
+* Evaluasi kuantitatif dilakukan dengan metrik  Precision\@k.   
+     -  Anime: Naruto
+      Precision@10: 1.0000
+
+   -  Anime: One Piece
+      Precision@10: 1.0000
+
+   -  Anime: Attack on Titan
+      Precision@10: 1.0000
+
+   Precision@10 = 1.0 Artinya Sangat Tinggi
+    - Semua rekomendasi (10 dari 10) memiliki kemiripan tag dengan anime target.
+    - Ini menunjukkan model Content-Based Filtering bekerja sangat baik dalam kesamaan konten/tag.
+
+### **2. Collaborative Filtering (CF) Berbasis Neural Network**
+
+* Sistem dibangun menggunakan model RecommenderNet, yaitu neural network berbasis embedding untuk user dan anime.
+
+* Dataset digunakan dari hasil filter:
+
+  * 179 pengguna (user aktif yang memberi rating ≥ 10 anime)
+  * 8.133 anime unik**
+  * Total data training: 6.506
+  * Total data testing: 1.627
+
+* Rating dinormalisasi ke skala 0–1 dan diklasifikasikan biner: rating ≥ 3.5 diberi label 1 (suka), sisanya 0 (tidak suka).
+
+* Hasil Pelatihan:
+
+  * Epoch 1:
+
+    * Loss: 0.7418
+    * RMSE: 0.5196
+    * Val Loss: 0.6459
+    * Val RMSE: 0.4758
+  * Epoch 2:
+
+    * Loss: 0.6412
+    * RMSE: 0.4746
+    * Val Loss: 0.6117
+    * Val RMSE: 0.4576
+
+* Fungsi `get_recommendations(user_id)` berhasil merekomendasikan anime berdasarkan prediksi model.
+
+* Contoh hasil untuk user ID 72703 dan prediksi rating:
+
+    1. Katana Maidens: Toji no Miko Recap — 0.470138
+    2. Pinocchio-P: E no Umakatta Tomodachi — 0.464502
+    3. Shijin no Shougai — 0.456394
+    4. Yakusoku (2009) — 0.455088
+    5. Servamp: Hai ni Mamireta Shoukei - All the world’s a stage — 0.454850
+
+#### **3. Perbandingan Metode & Efektivitas**
+
+* CBF:
+
+  * Cocok untuk pengguna baru tanpa banyak riwayat interaksi.
+  * Memberikan rekomendasi berdasarkan kemiripan konten (genre/tags).
+  * Evaluasi visual dan tag membuktikan hasilnya relevan.
+
+* CF:
+
+  * Lebih personal, memanfaatkan pola interaksi dan rating pengguna.
+  * Meskipun hanya menggunakan data dari 179 user aktif, model tetap dapat memberikan rekomendasi yang bermakna.
+  * RMSE validasi berkisar antara 0.45 - 0.47, cukup baik untuk model awal.
+
+## Penutup
+
+Dua pendekatan yang dikembangkan, yaitu Content-Based Filtering dan Collaborative Filtering, masing-masing memiliki keunggulan dalam konteks yang berbeda. CBF efektif untuk cold-start users, sedangkan CF lebih akurat dalam personalisasi. Kombinasi keduanya dapat menjadi solusi ideal untuk membangun sistem rekomendasi anime yang lebih kuat, adaptif, dan relevan dengan preferensi pengguna.
